@@ -5,24 +5,36 @@
 #include "DijkstraAlgorithm.h"
 
 #define MAX_LOADSTRING 100
-#define ID_BTNSTARTPOS 0
+#define ID_BTNERASER 0
+#define ID_BTNSTARTPOS 1
+#define ID_BTNENDPOS 2
+#define ID_BTNOBSTACLE 3
 
 // Global Variables:
-BOOL boolStartPosCursor = false;
-HCURSOR hStartPosCursor = LoadCursor(nullptr, IDC_ARROW);	//handle to cursor type when Start pos button is pressed
-//HDC hdc;
+BOOL boolStartPosCursor = FALSE;
+BOOL boolEndPosCursor = FALSE;
+BOOL boolObstacleCursor = FALSE;
+BOOL boolObstacleDraw = FALSE;
+BOOL boolEraserCursor = FALSE;
+BOOL boolEraserDraw = FALSE;
+HCURSOR hCursorStyle = LoadCursor(nullptr, IDC_ARROW);	//handle to cursor type when Start pos button is pressed
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 POINT cursor;	//cursor location
-int count = 0;
-int const GRID_SIZE = 10;	//const grid size in x and y axis
+INT count = 0;
+INT CONST GRID_SIZE = 10;	//const grid size in x and y axis
 Grid grid[GRID_SIZE][GRID_SIZE];
 xyValues start{ 0,0 }, end{ 0,0 };
 HWND hStartPosButtonWnd;
+HWND hEndPosButtonWnd;
+HWND hObstaclesButtonWnd;
+HWND hEraserButtonWnd;
 
 
-double const menu_y = 40;	//grid menu
+double CONST menu_y = 40;	//grid menu
+double size_x;
+double size_y;
 
 
 
@@ -126,36 +138,56 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-
 //function paints the grid in the window
 void paintingGridLines(HDC& hdc, const double size_x, const double size_y)
 {
-	HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));	//black brush
-
 	//fill rectangles
 
 	//fill start position
 	if (grid[start.x][start.y].mode == 1)
-				FillRect(hdc, &grid[start.x][start.y].tile, CreateSolidBrush(RGB(0, 233, 0)));
+	{
+		HBRUSH brush = CreateSolidBrush(RGB(0, 233, 0));
+		RECT rect = grid[start.x][start.y].tile;
+		rect.bottom += 1;
+		rect.right += 1;
+		FillRect(hdc, &rect, brush);
+		DeleteObject(brush);
+	}
+	
+	//fill end position
+	if (grid[end.x][end.y].mode == 2)
+	{
+		HBRUSH brush = CreateSolidBrush(RGB(233, 0, 0));
+		RECT rect = grid[end.x][end.y].tile;
+		rect.bottom += 1;
+		rect.right += 1;
+		FillRect(hdc, &rect, brush);
+		DeleteObject(brush);
+	}
 
+	for (int i = 0; i < GRID_SIZE; i++)
+	{
+		for (int j = 0; j < GRID_SIZE; j++)
+		{
+			if (grid[i][j].mode == 3)
+			{
+				HBRUSH brush = CreateSolidBrush(RGB(99, 44, 0));
+				RECT rect = grid[i][j].tile;
+				rect.bottom += 1;
+				rect.right += 1;
+				FillRect(hdc, &rect, brush);
+				DeleteObject(brush);
+			}
+		}
+	}
 
-	//for (int i = 0; i < GRID_SIZE; i++)
-	//{
-	//	for (int j = 0; j < GRID_SIZE; j++)
-	//	{
-	//		//if (grid[i][j].mode == 0)
-	//		//	FillRect(hdc, &grid[i][j].tile, CreateSolidBrush(RGB(255, 255, 255)));
-	//		if (grid[i][j].mode == 1)	//start pos
-	//		{
-	//			FillRect(hdc, &grid[i][j].tile, CreateSolidBrush(RGB(0, 233, 0)));
-	//		}
-	//	}
-	//}
-
-
+	HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));	//black brush
 	//draw lines
 	for (int i = 0; i < GRID_SIZE+1; i++)
 	{
+
+
+
 		RECT ver_line, hor_line;	//initializing lines
 
 		//draw vertical strips
@@ -173,14 +205,6 @@ void paintingGridLines(HDC& hdc, const double size_x, const double size_y)
 		FillRect(hdc, &hor_line, brush);	//creating a vertical line
 	}
 
-	//brush = CreateSolidBrush(RGB(255, 0, 0));
-	//for (int i = 0; i < GRID_SIZE; i++)
-	//{
-	//	for (int j = 0; j < GRID_SIZE; j++)
-	//	{
-	//		FrameRect(hdc, &grid[i][j].tile, brush);
-	//	}
-	//}
 	DeleteObject(brush);	//release memory
 }
 
@@ -190,8 +214,8 @@ void createGrid(HWND& hWnd, HDC hdc, int width, int height)
 {
 	//get constant sizes of a single tile
 
-	double const size_x = 1.0*(width) / (1.0*(GRID_SIZE+2));
-	double const size_y = 1.0*(height - menu_y) / (1.0*(GRID_SIZE+2));
+	size_x = 1.0*(width) / (1.0*(GRID_SIZE+2)) - 1.625/(sqrt(GRID_SIZE));
+	size_y = 1.0*(height - menu_y) / (1.0*(GRID_SIZE+2));
 
 
 	//give each tile a position in screen
@@ -210,17 +234,112 @@ void createGrid(HWND& hWnd, HDC hdc, int width, int height)
 	paintingGridLines(hdc, size_x, size_y);	//calling line painting function
 
 
-	//move start pos button
-	MoveWindow(hStartPosButtonWnd, 2*size_x, menu_y/6, menu_y*3, menu_y*2/3 + size_y * 2 / 3, NULL);
+	//move buttons
+	MoveWindow(hStartPosButtonWnd, menu_y, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
+	MoveWindow(hEndPosButtonWnd, 7 * menu_y / 2, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
+	MoveWindow(hObstaclesButtonWnd, 6 * menu_y, menu_y / 6, menu_y * 4, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
+	MoveWindow(hEraserButtonWnd, 11 * menu_y, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
 }
 
 
-void colorTile(HDC& hdc, RECT& rect, HBRUSH& brush)
+//function sets the start/end positions on grid
+void setTilePos(HWND hWnd, char const mode, xyValues& val)
 {
-	FillRect(hdc, &rect, brush);	//creating a vertical line
-	RECT r{ 300, 400, 500, 500 };
-	FillRect(hdc, &r, brush);	//creating a vertical line
-	::MessageBeep(0xFFFFFFFF);
+	//get cursor position
+	GetCursorPos(&cursor);
+	ScreenToClient(hWnd, &cursor);
+
+	//get screen dimensions
+	RECT screen;
+	GetWindowRect(hWnd, &screen);
+
+	int width = screen.right - screen.left;
+	int height = screen.bottom - screen.top - 60;	//-60 is to deduct from the toolbar
+
+	size_x = 1.0*(width) / (1.0*(GRID_SIZE + 2)) - 1.625 / (sqrt(GRID_SIZE));
+	size_y = 1.0*(height - menu_y) / (1.0*(GRID_SIZE + 2));
+
+	//if cursor's position is on the grid, get coordinates, then color the tile
+	if (cursor.x >= size_x && cursor.x < width - size_x &&
+		cursor.y >= menu_y + size_y && cursor.y < height - size_y)
+	{
+		//*****use this formula to calculate tile's dimensions:*****
+		int x = cursor.x / size_x - 1;
+		int y = (cursor.y - menu_y) / size_y - 1;
+
+		//test if x and y coordinates are inbetween 0 inclusive and GRID_SIZE not inclusive
+		if (x >= 0 && x < GRID_SIZE &&
+			y >= 0 && y < GRID_SIZE)
+		{
+			//save starting position indexes and update window
+			if (grid[val.x][val.y].mode == mode)
+				grid[val.x][val.y].mode = 0;
+			grid[x][y].mode = mode;
+			val.x = x;
+			val.y = y;
+
+			//if ()
+			InvalidateRect(hWnd, NULL, TRUE);	//call WM_PAINT
+		}
+	}
+
+	//set cursor back to normal
+	hCursorStyle = LoadCursor(nullptr, IDC_ARROW);
+	boolStartPosCursor = false;	//reset to false
+	boolEndPosCursor = false;
+
+	DeleteObject(&screen);
+}
+
+
+//function sets the states of tiles when the user moves the mouse in specific mode on the grid
+void setTileStateByMouseDrawing(HWND hWnd, char const mode)
+{
+	//get cursor position
+	GetCursorPos(&cursor);
+	ScreenToClient(hWnd, &cursor);
+
+	//get screen dimensions
+	RECT screen;
+	GetWindowRect(hWnd, &screen);
+
+	int width = screen.right - screen.left;
+	int height = screen.bottom - screen.top - 60;	//-60 is to deduct from the toolbar
+
+	size_x = 1.0*(width) / (1.0*(GRID_SIZE + 2)) - 1.625 / (sqrt(GRID_SIZE));
+	size_y = 1.0*(height - menu_y) / (1.0*(GRID_SIZE + 2));
+
+	//if cursor's position is on the grid, get coordinates, then color the tile
+	if (cursor.x >= size_x && cursor.x < width - size_x &&
+		cursor.y >= menu_y + size_y && cursor.y < height - size_y)
+	{
+		//*****use this formula to calculate tile's dimensions:*****
+		int x = cursor.x / size_x - 1;
+		int y = (cursor.y - menu_y) / size_y - 1;
+
+		//test if x and y coordinates are inbetween 0 inclusive and GRID_SIZE not inclusive
+		if (x >= 0 && x < GRID_SIZE &&
+			y >= 0 && y < GRID_SIZE)
+		{
+			//save starting position indexes and update window
+			bool startMode;
+			if (grid[x][y].mode != mode)
+			{
+				grid[x][y].mode = mode;
+
+				//if ()
+				InvalidateRect(hWnd, NULL, TRUE);	//call WM_PAINT
+			}
+
+		}
+	}
+
+	//set cursor back to normal
+	//hCursorStyle = LoadCursor(nullptr, IDC_ARROW);
+	boolStartPosCursor = false;	//reset to false
+	boolEndPosCursor = false;
+
+	DeleteObject(&screen);
 }
 
 
@@ -251,108 +370,202 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			20,        // Button width
 			20,        // Button height
 			hWnd,     // Parent window
-			(HMENU)ID_BTNSTARTPOS,       // No menu.
+			(HMENU)ID_BTNSTARTPOS,       //menu.
 			(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
 			NULL);      // Pointer not needed.
+
+
+				//create button for starting position
+		hEndPosButtonWnd = CreateWindow(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"End pos",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			45,         // x position 
+			30,         // y position 
+			20,        // Button width
+			20,        // Button height
+			hWnd,     // Parent window
+			(HMENU)ID_BTNENDPOS,       //menu.
+			(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+			NULL);      // Pointer not needed.
+
+
+		hObstaclesButtonWnd = CreateWindow(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Obstacle Brush",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			45,         // x position 
+			30,         // y position 
+			20,        // Button width
+			20,        // Button height
+			hWnd,     // Parent window
+			(HMENU)ID_BTNOBSTACLE,       //menu.
+			(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+			NULL);      // Pointer not needed.
+
+
+		hEraserButtonWnd = CreateWindow(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Eraser",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			45,         // x position 
+			30,         // y position 
+			20,        // Button width
+			20,        // Button height
+			hWnd,     // Parent window
+			(HMENU)ID_BTNERASER,       //menu.
+			(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+			NULL);      // Pointer not needed.
+
 
 	}
 	break;
     case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Parse the menu selections:
+        switch (wmId)
         {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-				//when Start pos button is pressed, user can select a starting tile.
-			case ID_BTNSTARTPOS:
-				{
-					hStartPosCursor = LoadCursor(nullptr, IDC_WAIT);	//load cursor model to cursor handle
-					boolStartPosCursor = true;
-				}
-				break;
-				//when left mouse click is pressed
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+			//when Start pos button is pressed, user can select a starting tile.
+		case ID_BTNSTARTPOS:
+		{
+			boolEndPosCursor = FALSE;
+			boolObstacleCursor = FALSE;
+			boolEraserCursor = FALSE;
+
+			hCursorStyle = LoadCursor(nullptr, IDC_CROSS);	//load cursor model to cursor handle
+			boolStartPosCursor = TRUE;
+		}
+		break;
+			//when End pos button is pressed, user can select a starting tile.
+		case ID_BTNENDPOS:
+		{
+			boolStartPosCursor = FALSE;
+			boolObstacleCursor = FALSE;
+			boolEraserCursor = FALSE;
+
+			hCursorStyle = LoadCursor(nullptr, IDC_CROSS);	//load cursor model to cursor handle
+			boolEndPosCursor = TRUE;
+		}
+		break;
+			//when Obstacle button is pressed, user can draw obstacles on grid
+		case ID_BTNOBSTACLE:
+		{
+			boolStartPosCursor = FALSE;
+			boolEndPosCursor = FALSE;
+			boolEraserCursor = FALSE;
+
+			hCursorStyle = LoadCursor(nullptr, IDC_CROSS);
+			boolObstacleCursor = TRUE;
+		}
+		break;
+			//when Eraser button is pressed, user can reset tiles on grid
+		case ID_BTNERASER:
+		{
+			boolStartPosCursor = FALSE;
+			boolEndPosCursor = FALSE;
+			boolObstacleCursor = FALSE;
+
+			hCursorStyle = LoadCursor(nullptr, IDC_CROSS);
+			boolEraserCursor = TRUE;
+		}
+		break;
+        case IDM_ABOUT:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            break;
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
         }
-        break;
+    }
+    break;
 	case WM_LBUTTONDOWN:
+	{
+		//when the Start pos button was pressed and the mouse clicks
+		if (boolStartPosCursor)
 		{
-			//::MessageBox(hWnd, L"HI", L"HI", MB_OK);
-			//when the button was pressed
-			if (boolStartPosCursor)
-			{
-				//get cursor position
-				GetCursorPos(&cursor);
-				ScreenToClient(hWnd, &cursor);
-
-				//get screen dimentions
-				RECT screen;
-				GetWindowRect(hWnd, &screen);
-
-				int width = screen.right - screen.left;
-				int height = screen.bottom - screen.top - 60;	//-60 is to deduct from the toolbar
-
-				double const size_x = 1.0*(width) / (1.0*(GRID_SIZE + 2));
-				double const size_y = 1.0*(height - menu_y) / (1.0*(GRID_SIZE + 2));
-
-				//if cursor's position is on the grid, get coordinates, then color the tile
-				if (cursor.x >= size_x && cursor.x < width - size_x &&
-					cursor.y >= menu_y + size_y && cursor.y < height - size_y)
-				{
-					//*****use this formula to calculate tile's dimentions:*****
-					int x = cursor.x / size_x - 1;
-					int y = (cursor.y - menu_y) / size_y - 1;
-
-					grid[start.x][start.y].mode = 0;
-					grid[x][y].mode = 1;
-					start.x = x;
-					start.y = y;
-					InvalidateRect(hWnd, NULL, TRUE);	//call WM_PAINT
-				}
-
-				hStartPosCursor = LoadCursor(nullptr, IDC_ARROW);
-				boolStartPosCursor = false;	//reset to false
-
-				DeleteObject(&screen);
-			}
+			setTilePos(hWnd, 1, start);
 		}
-		break;
+		if (boolEndPosCursor)
+		{
+			setTilePos(hWnd, 2, end);
+		}
+		if (boolObstacleCursor)
+		{
+			boolObstacleDraw = TRUE;
+			setTileStateByMouseDrawing(hWnd, 3);
+		}
+		if (boolEraserCursor)
+		{
+			boolEraserDraw = TRUE;
+			setTileStateByMouseDrawing(hWnd, 0);
+		}
+	}
+	break;
+	case WM_LBUTTONUP:
+	{
+
+		boolObstacleDraw = FALSE;
+		boolEraserDraw = FALSE;
+	}
+	break;
+	case WM_RBUTTONDOWN:
+	{
+		boolStartPosCursor = FALSE;
+		boolEndPosCursor = FALSE;
+		boolObstacleCursor = FALSE;
+		boolObstacleDraw = FALSE;
+		boolEraserCursor = FALSE;
+		boolEraserDraw = FALSE;
+
+		hCursorStyle = LoadCursor(nullptr, IDC_ARROW);
+	}
+	break;
+	case WM_MOUSEMOVE:
+	{
+		if (boolObstacleDraw)
+		{
+			setTileStateByMouseDrawing(hWnd, 3);
+		}
+		if (boolEraserDraw)
+		{
+			setTileStateByMouseDrawing(hWnd, 0);
+		}
+	}
+	break;
+		
 	case WM_GETMINMAXINFO:
-		{
-			LPMINMAXINFO lpMMI = (LPMINMAXINFO)lParam;
-			lpMMI->ptMinTrackSize.x = 800;
-			lpMMI->ptMinTrackSize.y = 600;
-		}
-		break;
-		//change cursor if the Start pos button is pushed
+	{
+		LPMINMAXINFO lpMMI = (LPMINMAXINFO)lParam;
+		lpMMI->ptMinTrackSize.x = 800;
+		lpMMI->ptMinTrackSize.y = 600;
+	}
+	break;
+	//change cursor if the Start pos button is pushed
 	case WM_SETCURSOR:
 	{
-		SetCursor(hStartPosCursor);	//change cursor
+		SetCursor(hCursorStyle);	//change cursor
 	}
 	break;
     case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
 
-			RECT screen;
-			GetWindowRect(hWnd, &screen);
+		//get screen dimensions
+		RECT screen;
+		GetWindowRect(hWnd, &screen);
 
-			int win_width = screen.right - screen.left;
-			int win_height = screen.bottom - screen.top - 60;	//-60 is to deduct from the toolbar
+		int win_width = screen.right - screen.left;
+		int win_height = screen.bottom - screen.top - 60;	//-60 is to deduct from the toolbar
 
-			createGrid(hWnd, hdc, win_width, win_height);	//draw grid
-            // TODO: Add any drawing code that uses hdc here...
-            EndPaint(hWnd, &ps);
-        }
-        break;
+		createGrid(hWnd, hdc, win_width, win_height);	//draw grid
+        // TODO: Add any drawing code that uses hdc here...
+        EndPaint(hWnd, &ps);
+    }
+    break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

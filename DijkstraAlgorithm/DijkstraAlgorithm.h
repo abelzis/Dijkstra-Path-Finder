@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "resource.h"
+#include <cmath>
 #include <Windows.h>
 
 //structure grid
@@ -12,6 +13,7 @@ struct Grid {
 	//0 - normal
 	//1 - start position
 	//2 - end position;
+	//3 - obstacle
 	unsigned char mode = 0;
 };
 

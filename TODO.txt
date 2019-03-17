@@ -1,0 +1,15 @@
+Create a program that would find shortest path given start location and end location.
+1) Find a way to add obstacles using mouse (like in paint)
+	a) Divide the window into grid 100x100
+		aa) Use initial WM_CREATE message to initialize grid
+		bb) Use WM_SIZING message to correct grid if user resizes the window
+	b) If mouse while drawing is on tile, -> tile.is_obstacle = true
+2) Implement algorithm
+	a) Obstacle has bool value obs = true
+	b) if next_tile.is_obstacle != true, then we can move onto tile
+3) UI
+	a) User can put Start point anywhere on the board.
+	b) User can put End point anywhere on the board.
+	c) User can draw Obstacles anywhere on the board.
+	d) User can press the Start button to start visualization.
+	e) User can drag Speed-bar to increase/decrease the speed of visualization.
