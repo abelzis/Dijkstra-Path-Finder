@@ -5,6 +5,7 @@ Desktop application which visualizes Dijkstra's (pathfinding) algorithm principl
 The easiest way is to download and launch the .exe file (wait for release). Otherwise, debug source code using winapi.
 
 # Changelog
+# Changelog
 ### v0.1.1 (2019-03-18)
   **Added:**
   - Start and End position buttons
