@@ -19,6 +19,7 @@ Desktop application which visualizes Dijkstra's (pathfinding) algorithm principl
   - Start button to start the Dijkstra's shortest path finding algorithm
   - Clear and Reset buttons
   - Visualization of the algorithm
+  - CMake support
 ### v0.1.1 (2019-03-18)
   **Added:**
   - Start and End position buttons
