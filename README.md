@@ -8,7 +8,7 @@ Desktop application which visualizes Dijkstra's (pathfinding) algorithm principl
 4. Click *Configure*, select IDE/Compiler and proceed to *Generate*
 5. Open the project file (if using Visual Studio *DijkstraAlgorithm.sln*)
 6. Select *DijkstraPathFinding* project as start-up
-7. Go to Properties->Configuration Properties and change the *Character Set* to **Use Unicode Character Set**
+7. Go to Properties->Configuration Properties and change the Character Set to **Use Unicode Character Set**
 8. Go to Properties->Linker->System and change SubSystem to **Windows (/SUBSYSTEM:WINDOWS)**
 9. Done. Debug, launch and enjoy.
 
