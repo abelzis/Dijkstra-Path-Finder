@@ -20,7 +20,7 @@ Desktop application which visualizes Dijkstra's (pathfinding) algorithm principl
   - Clear and Reset buttons
   - Visualization of the algorithm
   - CMake support
-### v0.1.1 (2019-03-18)
+### v0.1.1a (2019-03-18)
   **Added:**
   - Start and End position buttons
   - Obstacle button
