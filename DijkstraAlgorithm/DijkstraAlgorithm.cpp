@@ -1,35 +1,44 @@
 ﻿// DijkstraAlgorithm.cpp : Defines the entry point for the application.
 //
 
-#include "stdafx.h"
 #include "DijkstraAlgorithm.h"
+#include "Dijkstra.h"
+
 
 #define MAX_LOADSTRING 100
 #define ID_BTNERASER 0
 #define ID_BTNSTARTPOS 1
 #define ID_BTNENDPOS 2
 #define ID_BTNOBSTACLE 3
+#define ID_BTNSTART 4
+#define ID_BTNCLEAR 5
+#define ID_BTNRESET 6
 
 // Global Variables:
 BOOL boolStartPosCursor = FALSE;
 BOOL boolEndPosCursor = FALSE;
 BOOL boolObstacleCursor = FALSE;
 BOOL boolObstacleDraw = FALSE;
+BOOL boolObstacleEraser = FALSE;
 BOOL boolEraserCursor = FALSE;
 BOOL boolEraserDraw = FALSE;
+BOOL boolPaintDijkstra = FALSE;
 HCURSOR hCursorStyle = LoadCursor(nullptr, IDC_ARROW);	//handle to cursor type when Start pos button is pressed
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 POINT cursor;	//cursor location
 INT count = 0;
-INT CONST GRID_SIZE = 10;	//const grid size in x and y axis
+//INT CONST GRID_SIZE = 20;	//const grid size in x and y axis
 Grid grid[GRID_SIZE][GRID_SIZE];
 xyValues start{ 0,0 }, end{ 0,0 };
 HWND hStartPosButtonWnd;
 HWND hEndPosButtonWnd;
 HWND hObstaclesButtonWnd;
 HWND hEraserButtonWnd;
+HWND hStartButtonWnd;
+HWND hClearButtonWnd;
+HWND hResetButtonWnd;
 
 
 double CONST menu_y = 40;	//grid menu
@@ -143,6 +152,42 @@ void paintingGridLines(HDC& hdc, const double size_x, const double size_y)
 {
 	//fill rectangles
 
+	for (int i = 0; i < GRID_SIZE; i++)
+	{
+		for (int j = 0; j < GRID_SIZE; j++)
+		{
+			if (grid[i][j].mode == 3)
+			{
+				HBRUSH brush = CreateSolidBrush(RGB(40, 40, 40));
+				RECT rect = grid[i][j].tile;
+				rect.bottom += 1;
+				rect.right += 1;
+				FillRect(hdc, &rect, brush);
+				DeleteObject(brush);
+			}
+
+			if (grid[i][j].path_mode == 1)
+			{
+				HBRUSH brush = CreateSolidBrush(RGB(grid[i][j].r, grid[i][j].g, grid[i][j].b));
+				RECT rect = grid[i][j].tile;
+				rect.bottom += 1;
+				rect.right += 1;
+				FillRect(hdc, &rect, brush);
+				DeleteObject(brush);
+			}
+
+			if (grid[i][j].path_mode == 2)
+			{
+				HBRUSH brush = CreateSolidBrush(RGB(grid[i][j].r, grid[i][j].g, grid[i][j].b));
+				RECT rect = grid[i][j].tile;
+				rect.bottom += 1;
+				rect.right += 1;
+				FillRect(hdc, &rect, brush);
+				DeleteObject(brush);
+			}
+		}
+	}
+
 	//fill start position
 	if (grid[start.x][start.y].mode == 1)
 	{
@@ -153,7 +198,7 @@ void paintingGridLines(HDC& hdc, const double size_x, const double size_y)
 		FillRect(hdc, &rect, brush);
 		DeleteObject(brush);
 	}
-	
+
 	//fill end position
 	if (grid[end.x][end.y].mode == 2)
 	{
@@ -163,22 +208,6 @@ void paintingGridLines(HDC& hdc, const double size_x, const double size_y)
 		rect.right += 1;
 		FillRect(hdc, &rect, brush);
 		DeleteObject(brush);
-	}
-
-	for (int i = 0; i < GRID_SIZE; i++)
-	{
-		for (int j = 0; j < GRID_SIZE; j++)
-		{
-			if (grid[i][j].mode == 3)
-			{
-				HBRUSH brush = CreateSolidBrush(RGB(99, 44, 0));
-				RECT rect = grid[i][j].tile;
-				rect.bottom += 1;
-				rect.right += 1;
-				FillRect(hdc, &rect, brush);
-				DeleteObject(brush);
-			}
-		}
 	}
 
 	HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));	//black brush
@@ -239,6 +268,9 @@ void createGrid(HWND& hWnd, HDC hdc, int width, int height)
 	MoveWindow(hEndPosButtonWnd, 7 * menu_y / 2, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
 	MoveWindow(hObstaclesButtonWnd, 6 * menu_y, menu_y / 6, menu_y * 4, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
 	MoveWindow(hEraserButtonWnd, 11 * menu_y, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
+	MoveWindow(hStartButtonWnd, 15 * menu_y, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
+	MoveWindow(hClearButtonWnd, 20 * menu_y, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
+	MoveWindow(hResetButtonWnd, 24 * menu_y, menu_y / 6, menu_y * 2, menu_y * 2 / 3 + size_y * 2 / 3, NULL);
 }
 
 
@@ -292,7 +324,7 @@ void setTilePos(HWND hWnd, char const mode, xyValues& val)
 }
 
 
-//function sets the states of tiles when the user moves the mouse in specific mode on the grid
+//function sets the states of tiles when the user moves the mouse in specific mode on the grid 
 void setTileStateByMouseDrawing(HWND hWnd, char const mode)
 {
 	//get cursor position
@@ -327,8 +359,11 @@ void setTileStateByMouseDrawing(HWND hWnd, char const mode)
 			{
 				grid[x][y].mode = mode;
 
+				RECT tile = grid[x][y].tile;
+				tile.bottom += 3;
+				tile.right += 3;
 				//if ()
-				InvalidateRect(hWnd, NULL, TRUE);	//call WM_PAINT
+				InvalidateRect(hWnd, &tile, TRUE);	//call WM_PAINT
 			}
 
 		}
@@ -336,11 +371,22 @@ void setTileStateByMouseDrawing(HWND hWnd, char const mode)
 
 	//set cursor back to normal
 	//hCursorStyle = LoadCursor(nullptr, IDC_ARROW);
-	boolStartPosCursor = false;	//reset to false
-	boolEndPosCursor = false;
+	boolStartPosCursor = FALSE;	//reset to false
+	boolEndPosCursor = FALSE;
 
 	DeleteObject(&screen);
 }
+
+
+
+void paintTile(HWND hWnd, RECT tile)
+{
+	tile.bottom += 3;
+	tile.right += 3;
+	InvalidateRect(hWnd, &tile, TRUE);	//call WM_PAINT
+}
+
+
 
 
 //
@@ -418,6 +464,47 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			NULL);      // Pointer not needed.
 
 
+		hStartButtonWnd = CreateWindow(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Start",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			45,         // x position 
+			30,         // y position 
+			20,        // Button width
+			20,        // Button height
+			hWnd,     // Parent window
+			(HMENU)ID_BTNSTART,       //menu.
+			(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+			NULL);      // Pointer not needed.
+
+
+		hClearButtonWnd = CreateWindow(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Clear",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			45,         // x position 
+			30,         // y position 
+			20,        // Button width
+			20,        // Button height
+			hWnd,     // Parent window
+			(HMENU)ID_BTNCLEAR,       //menu.
+			(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+			NULL);      // Pointer not needed.
+
+
+		hResetButtonWnd = CreateWindow(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Reset",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			45,         // x position 
+			30,         // y position 
+			20,        // Button width
+			20,        // Button height
+			hWnd,     // Parent window
+			(HMENU)ID_BTNRESET,       //menu.
+			(HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE),
+			NULL);      // Pointer not needed.
+
 	}
 	break;
     case WM_COMMAND:
@@ -470,6 +557,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			boolEraserCursor = TRUE;
 		}
 		break;
+			//when Start button is pressed, the dijkstra simulation begins.
+		case ID_BTNSTART:
+		{
+			clearGrid(hWnd, grid);
+			boolPaintDijkstra = TRUE;
+			InvalidateRect(hWnd, NULL, TRUE);
+		}
+		break;
+			//when Clear button is pressed, clears the recent pathings
+		case ID_BTNCLEAR:
+		{
+			clearGrid(hWnd, grid);
+		}
+		break;
+		case ID_BTNRESET:
+		{
+			resetGrid(hWnd, grid, start, end);
+		}
+		break;
         case IDM_ABOUT:
             DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
             break;
@@ -481,6 +587,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
     }
     break;
+	//left click down
 	case WM_LBUTTONDOWN:
 	{
 		//when the Start pos button was pressed and the mouse clicks
@@ -488,15 +595,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			setTilePos(hWnd, 1, start);
 		}
+		//when End pos button was pressed and mouse clicked
 		if (boolEndPosCursor)
 		{
 			setTilePos(hWnd, 2, end);
 		}
+		//when Obstacle brush button was pressed
 		if (boolObstacleCursor)
 		{
 			boolObstacleDraw = TRUE;
 			setTileStateByMouseDrawing(hWnd, 3);
 		}
+		//when Eraser button was pressed
 		if (boolEraserCursor)
 		{
 			boolEraserDraw = TRUE;
@@ -504,6 +614,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
+	//left click up
 	case WM_LBUTTONUP:
 	{
 
@@ -511,16 +622,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		boolEraserDraw = FALSE;
 	}
 	break;
+	//right click down
 	case WM_RBUTTONDOWN:
 	{
+		hCursorStyle = LoadCursor(nullptr, IDC_ARROW);
+
 		boolStartPosCursor = FALSE;
 		boolEndPosCursor = FALSE;
-		boolObstacleCursor = FALSE;
-		boolObstacleDraw = FALSE;
 		boolEraserCursor = FALSE;
 		boolEraserDraw = FALSE;
 
-		hCursorStyle = LoadCursor(nullptr, IDC_ARROW);
+		if (boolObstacleCursor)
+		{
+			boolEraserCursor = TRUE;
+			boolEraserDraw = TRUE;
+			boolObstacleEraser = TRUE;
+
+			setTileStateByMouseDrawing(hWnd, 0);
+
+			hCursorStyle = LoadCursor(nullptr, IDC_CROSS);
+		}
+
+		boolObstacleCursor = FALSE;
+		boolObstacleDraw = FALSE;
+	}
+	break;
+	case WM_RBUTTONUP:
+	{
+		if (boolObstacleEraser)
+		{
+			boolEraserCursor = FALSE;
+			boolEraserDraw = FALSE;
+
+			boolObstacleCursor = TRUE;
+		}
 	}
 	break;
 	case WM_MOUSEMOVE:
@@ -561,6 +696,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int win_width = screen.right - screen.left;
 		int win_height = screen.bottom - screen.top - 60;	//-60 is to deduct from the toolbar
 
+		//cheaty way to paint algorithm, but slow
+		if (boolPaintDijkstra)
+		{
+			int speed = 100;
+			boolPaintDijkstra = TRUE;
+			dijkstraAlgorithm(hWnd, hdc, end, grid, start.x, start.y, speed);
+			boolPaintDijkstra = FALSE;
+		}
 		createGrid(hWnd, hdc, win_width, win_height);	//draw grid
         // TODO: Add any drawing code that uses hdc here...
         EndPaint(hWnd, &ps);

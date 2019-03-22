@@ -2,10 +2,23 @@
 Desktop application which visualizes Dijkstra's (pathfinding) algorithm principles by allowing user to interact with the map.
 
 # How to use?
-The easiest way is to download and launch the .exe file (wait for release). Otherwise, debug source code using winapi.
+1. Download the files
+2. Open CMake and select *source path* to the files downloaded
+3. Select where you will build the project ( *build binaries* )
+4. Click *Configure*, select IDE/Compiler and proceed to *Generate*
+5. Open the project file (if using Visual Studio *DijkstraAlgorithm.sln*)
+6. Select *DijkstraPathFinding* project as start-up
+7. Go to Properties->Configuration Properties and change the *Character Set* to *Use Unicode Character Set*
+8. Go to Properties->Linker->System and change SubSystem to **Windows (/SUBSYSTEM:WINDOWS)**
+9. Done. Debug, launch and enjoy.
 
 # Changelog
-# Changelog
+### [v0.2.0](https://github.com/abelzis/Dijkstra-Path-Finder/releases) (2019-03-22)
+  **Added:**
+  - Eraser brush button
+  - Start button to start the Dijkstra's shortest path finding algorithm
+  - Clear and Reset buttons
+  - Visualization of the algorithm
 ### v0.1.1 (2019-03-18)
   **Added:**
   - Start and End position buttons
