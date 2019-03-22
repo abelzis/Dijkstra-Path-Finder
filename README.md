@@ -13,18 +13,18 @@ Desktop application which visualizes Dijkstra's (pathfinding) algorithm principl
 9. Done. Debug, launch and enjoy.
 
 # Changelog
-### [v0.2.0](https://github.com/abelzis/Dijkstra-Path-Finder/releases) (2019-03-22)
+### [v0.2.0](https://github.com/abelzis/Dijkstra-Path-Finder/releases/tag/v0.2.0) (2019-03-22)
   **Added:**
   - Eraser brush button
   - Start button to start the Dijkstra's shortest path finding algorithm
   - Clear and Reset buttons
   - Visualization of the algorithm
   - CMake support
-### v0.1.1a (2019-03-18)
+### [v0.1.1a](https://github.com/abelzis/Dijkstra-Path-Finder/releases/tag/v0.1.1a) (2019-03-18)
   **Added:**
   - Start and End position buttons
   - Obstacle button
-### v0.1 (initial) (2019-03-15)
+### [v0.1](https://github.com/abelzis/Dijkstra-Path-Finder/releases/tag/v0.1) (initial) (2019-03-15)
   **Added:**
   - Grid of the map.
   - Start position button, marking a tile green.
